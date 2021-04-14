@@ -28,29 +28,14 @@ RUN apt-get update -y && \
     wget \
     unzip \
     zip
-RUN npm install typescript -g
 
-RUN cd /opt && git clone --recurse-submodules https://github.com/chrberger/mini-decoder.js && mv mini-decoder.js sources && cd sources/codecs && \ 
-    rm -r libvpx && git clone https://github.com/webmproject/libvpx/ && cd libvpx && git checkout 992d9a0
+RUN cd /opt && git clone --recurse-submodules https://github.com/chrberger/mini-decoder.js && mv mini-decoder.js sources && cd sources/codecs && \
+	rm -r libvpx && git clone https://github.com/webmproject/libvpx/ && cd libvpx && git checkout 992d9a0
+
 WORKDIR /opt/sources 
-RUN ls /opt
-RUN cd ts && \
-    echo "Retrieving es6-promise.d.ts v4.2.4 from https://github.com/stefanpenner/es6-promise." && \
-    wget https://raw.githubusercontent.com/stefanpenner/es6-promise/314e4831d5a0a85edcb084444ce089c16afdcbe2/es6-promise.d.ts && \
-    echo "Retrieving emscripten.d.ts v1.3.0 from https://github.com/DefinitelyTyped/DefinitelyTyped." && \
-    wget https://raw.githubusercontent.com/DefinitelyTyped/DefinitelyTyped/0ab77b678f0ca0ec18776fe5842f0526982e1fe3/types/emscripten/index.d.ts && \ 
-    mv index.d.ts emscripten.d.ts && \
-    cd /opt && \
-    npm i -g google-closure-compiler
-
-
 
 # Use Bash by default from now.
 SHELL ["/bin/bash", "-c"]
-
-# Patch ts/emscripten.d.ts
-# RUN cd ts && \
-#     patch -p1 < ../patches/emscripten.d.ts.patch
 
 # Build openh264_decoder.js.
 # RUN source /opt/emsdk/emsdk_env.sh && \
@@ -74,6 +59,7 @@ SHELL ["/bin/bash", "-c"]
 #     java -jar /opt/closure-compiler-v*.jar --js /tmp/openh264_decoder.js --js_output_file /tmp/openh264_decoder.js.2 && \
 #     mv /tmp/openh264_decoder.js.2 /tmp/openh264_decoder.js
 
+
 # Build vpx_decoder.js.
 RUN source /opt/emsdk/emsdk_env.sh && \
     cd /opt/sources && \
@@ -85,12 +71,27 @@ RUN source /opt/emsdk/emsdk_env.sh && \
     --disable-docs \
     --disable-examples && \
     emmake make libvpx_g.a
+
+RUN npm i -g google-closure-compiler@v20180716 typescript@3.0 @types/webassembly-js-api@0.0.1
+
+RUN cd ts && \
+    echo "Retrieving es6-promise.d.ts v4.2.4 from https://github.com/stefanpenner/es6-promise." && \
+    wget https://raw.githubusercontent.com/stefanpenner/es6-promise/314e4831d5a0a85edcb084444ce089c16afdcbe2/es6-promise.d.ts && \
+    echo "Retrieving emscripten.d.ts v1.3.0 from https://github.com/DefinitelyTyped/DefinitelyTyped." && \
+    wget https://raw.githubusercontent.com/DefinitelyTyped/DefinitelyTyped/f7ef9c6192f86ddb0a876fcde1a30bbe17892dd7/emscripten/emscripten.d.ts
+    # mv index.d.ts emscripten.d.ts
+
+# wget https://raw.githubusercontent.com/DefinitelyTyped/DefinitelyTyped/942a85e5a2ac0fb339a4660383de0e8306adacd3/types/emscripten/index.d.ts && \
+
+#wget https://raw.githubusercontent.com/DefinitelyTyped/DefinitelyTyped/0ab77b678f0ca0ec18776fe5842f0526982e1fe3/types/emscripten/index.d.ts && \ #2019
+
+
 # npm install -g @types/webassembly-js-api@0.0.1 &&
-RUN   cd /opt/sources && \
+RUN source /opt/emsdk/emsdk_env.sh && cd /opt/sources && \
     mkdir -p build && cd build && \
     tsc ../ts/libvpx_decoder.ts --target esnext --outfile .libvpx_decoder.js && \
     emcc -o /tmp/libvpx_decoder.js \
-    -O3 --llvm-lto 1 --memory-init-file 0 \
+    -O1 --llvm-lto 1 --memory-init-file 0 \
     -s BUILD_AS_WORKER=1 -s TOTAL_MEMORY=67108864 \
     -s NO_FILESYSTEM=1 \
     -s EXPORTED_FUNCTIONS="['_malloc']" \
@@ -99,9 +100,25 @@ RUN   cd /opt/sources && \
     -s EXPORTED_FUNCTIONS="['_vpx_codec_vp8_dx','_vpx_codec_vp9_dx','_vpx_codec_dec_init2','_allocate_vpx_codec_ctx','_vpx_codec_dec_init_ver','_vpx_codec_decode','_vpx_codec_get_frame']" \
     --post-js .libvpx_decoder.js \
     /opt/sources/codecs/libvpx/libvpx_g.a ../bindings/libvpx.c && \
-    java -jar /opt/closure-compiler-v*.jar --js /tmp/libvpx_decoder.js --js_output_file /tmp/libvpx_decoder.js.2 && \
+    google-closure-compiler --js /tmp/libvpx_decoder.js --js_output_file /tmp/libvpx_decoder.js.2 && \
     mv /tmp/libvpx_decoder.js.2 /tmp/libvpx_decoder.js
 
+# RUN source /opt/emsdk/emsdk_env.sh && cd /opt/sources && \
+#     mkdir -p build && cd build && \
+#     tsc ../ts/libvpx_decoder.ts --target esnext --outfile .libvpx_decoder.js && \
+#     emcc -o /tmp/libvpx_decoder.js \
+#     -O3 --llvm-lto 1 --memory-init-file 0 \
+#     -s BUILD_AS_WORKER=1 -s TOTAL_MEMORY=67108864 \
+#     -s NO_FILESYSTEM=1 \
+#     -s EXPORTED_FUNCTIONS="['_malloc']" \
+#     -s EXPORTED_RUNTIME_METHODS="['setValue', 'getValue']" \
+#     -I /opt/sources/codecs/libvpx/vpx \
+#     -s EXPORTED_FUNCTIONS="['_vpx_codec_vp8_dx','_vpx_codec_vp9_dx','_vpx_codec_dec_init2','_allocate_vpx_codec_ctx','_vpx_codec_dec_init_ver','_vpx_codec_decode','_vpx_codec_get_frame']" \
+#     --post-js .libvpx_decoder.js \
+#     /opt/sources/codecs/libvpx/libvpx_g.a ../bindings/libvpx.c && \
+#     java -jar /opt/closure-compiler-v*.jar --js /tmp/libvpx_decoder.js --js_output_file /tmp/libvpx_decoder.js.2 && \
+#     mv /tmp/libvpx_decoder.js.2 /tmp/libvpx_decoder.js
+
 # When running a Docker container based on this image, simply copy the results to /opt/output.
-CMD cp /tmp/openh264_decoder.js /tmp/libvpx_decoder.js /opt/output/
+# CMD cp /tmp/openh264_decoder.js /tmp/libvpx_decoder.js /opt/output/
 
