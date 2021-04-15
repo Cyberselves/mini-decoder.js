@@ -28,6 +28,7 @@ class VPXDecoder {
     }
 
     _setup(cfg: any, packet: Packet) {
+        console.log("Setup called")
         if (cfg.version == 10) {
             this.iface = _vpx_codec_vp10_dx();
         } else if (cfg.version == 9) {
@@ -49,13 +50,17 @@ class VPXDecoder {
     }
 
     _decode(packet: Packet) {
+        console.log("Decode Packet called")
         this._check_buf_size(packet.data.byteLength);
         this.buf.set(new Uint8Array(packet.data));
+        console.log("before decode")
         var ret = _vpx_codec_decode(this.ctx, this.buf_ptr, packet.data.byteLength, 0, 0);
         if (ret) {
+            console.log("after decode - failed")
             this.worker.postMessage(<IResult>{status: -1});
             return;
         }
+        console.log("after decode - success")
         Module.setValue(this.iter, 0, 'i32');
         var img = 0;
         var frame = null;
