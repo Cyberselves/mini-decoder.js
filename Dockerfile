@@ -29,8 +29,10 @@ RUN apt-get update -y && \
     unzip \
     zip
 
-RUN cd /opt && git clone --recurse-submodules https://github.com/chrberger/mini-decoder.js && mv mini-decoder.js sources && cd sources/codecs && \
-	rm -r libvpx && git clone https://github.com/webmproject/libvpx/ && cd libvpx && git checkout v1.4.0
+ADD . /opt/sources
+
+# RUN cd /opt && git clone --recurse-submodules https://github.com/Cyberselves/mini-decoder.js && mv mini-decoder.js sources && cd sources/codecs && \
+# 	rm -r libvpx && git clone https://github.com/webmproject/libvpx/ && cd libvpx && git checkout v1.4.0
 
 WORKDIR /opt/sources 
 

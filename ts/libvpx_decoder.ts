@@ -18,6 +18,7 @@ class VPXDecoder {
     iter: number;
 
     constructor(worker: Worker) {
+        console.log("CONSTRUCTORING THE THING")
         this.worker = worker;
         this.worker.onmessage = (e: MessageEvent) => {
             this._setup(e.data.params, e.data.packet);
