@@ -42,12 +42,14 @@ class VPXDecoder {
         }
 
         this.worker.onmessage = (e: MessageEvent) => {
+            console.log("OnMessage");
+            console.log(e);
             this._decode(e.data);
         };
         this.worker.postMessage(<IResult>{status: 0});
     }
 
-    _decode(cfg: any, packet: Packet) {
+    _decode(packet: Packet) {
         console.log("Decode Packet called")
         this._check_buf_size(packet.data.byteLength);
         this.buf.set(new Uint8Array(packet.data));
