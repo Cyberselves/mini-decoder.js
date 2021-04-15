@@ -18,7 +18,6 @@ class VPXDecoder {
     iter: number;
 
     constructor(worker: Worker) {
-        console.log("CONSTRUCTORING THE THING")
         this.worker = worker;
         this.worker.onmessage = (e: MessageEvent) => {
             this._setup(e.data.params, e.data.packet);
@@ -28,7 +27,6 @@ class VPXDecoder {
     }
 
     _setup(cfg: any, packet: Packet) {
-        console.log("Setup called")
         if (cfg.version == 10) {
             this.iface = _vpx_codec_vp10_dx();
         } else if (cfg.version == 9) {
@@ -49,7 +47,7 @@ class VPXDecoder {
         this.worker.postMessage(<IResult>{status: 0});
     }
 
-    _decode(packet: Packet) {
+    _decode(cfg: any, packet: Packet) {
         console.log("Decode Packet called")
         this._check_buf_size(packet.data.byteLength);
         this.buf.set(new Uint8Array(packet.data));
